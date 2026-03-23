@@ -15,4 +15,5 @@ public class HouseDto {
     private Long schemaId;
     private String schemaName;
     private int maxUsers;
+    private int userCount;
 }

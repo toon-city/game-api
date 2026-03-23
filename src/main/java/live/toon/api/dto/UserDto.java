@@ -16,4 +16,7 @@ public class UserDto {
     /** 0 = aucun, 1/2/3 */
     private int toonizLevel;
     private OffsetDateTime lastLoginAt;
+    private boolean online;
+    /** ID de la room dans laquelle se trouve le joueur, ou null. */
+    private Long currentRoomId;
 }

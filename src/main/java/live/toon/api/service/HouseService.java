@@ -8,7 +8,12 @@ import live.toon.api.entity.*;
 import live.toon.api.repository.HouseSchemaRepository;
 import live.toon.api.repository.RoomRepository;
 import live.toon.api.repository.UserRepository;
+import live.toon.api.security.JwtPrincipal;
+import live.toon.api.security.policy.HousePolicy;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +29,7 @@ public class HouseService {
     private final HouseSchemaRepository schemaRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final HousePolicy housePolicy;
 
     // ── Schémas ───────────────────────────────────────────────────────────────
 
@@ -81,15 +87,48 @@ public class HouseService {
                 .toList();
     }
 
+    /** Liste paginée des maisons d'un utilisateur, triée par userCount DESC puis name ASC. */
+    @Transactional(readOnly = true)
+    public Page<HouseDto> listMyHousesPaged(UUID ownerId, String search, int page, int size) {
+        String q = search == null ? "" : search.trim();
+        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
+        return roomRepository.findMyHousesPaged(ownerId, q, pageable).map(this::toHouseDto);
+    }
+
     public List<HouseDto> listPrivateHouses() {
         return roomRepository.findAllByType(RoomType.PRIVATE).stream()
                 .map(this::toHouseDto)
                 .toList();
     }
 
+    /**
+     * Returns a page of private houses sorted by userCount DESC then name ASC.
+     * When {@code search} is blank, only houses with users present are returned.
+     * Searches by house name OR owner username.
+     */
+    @Transactional(readOnly = true)
+    public Page<HouseDto> listPrivateHousesPaged(String search, int page, int size) {
+        boolean peopleOnly = search == null || search.isBlank();
+        String q = search == null ? "" : search.trim();
+        org.springframework.data.domain.Pageable pageable =
+                org.springframework.data.domain.PageRequest.of(page, Math.min(size, 50));
+        return roomRepository
+                .findHousesFiltered(q, peopleOnly, pageable)
+                .map(this::toHouseDto);
+    }
+
+    /**
+     * Modifie une maison existante.
+     * L'autorisation (propriétaire ou admin) est vérifiée en amont par
+     * {@code @PreAuthorize("hasPermission(#id, 'House', 'update')")} dans le controller.
+     */
     @Transactional
-    public HouseDto updateHouse(UUID requesterId, Long houseId, HouseRequest req) {
-        Room room = findPrivateAndCheckOwner(requesterId, houseId);
+    public HouseDto updateHouse(Long houseId, HouseRequest req) {
+        Room room = roomRepository.findById(houseId)
+                .orElseThrow(() -> new EntityNotFoundException("Maison introuvable : " + houseId));
+        if (room.getType() != RoomType.PRIVATE) {
+            throw new IllegalArgumentException("Cette salle n'est pas une maison privée");
+        }
 
         if (req.getAccess() == HouseAccess.PASSWORD &&
                 (req.getPassword() == null || req.getPassword().isBlank())) {
@@ -116,17 +155,23 @@ public class HouseService {
         return toHouseDto(roomRepository.save(room));
     }
 
+    /**
+     * Supprime une maison.
+     * L'autorisation est vérifiée en amont par
+     * {@code @PreAuthorize("hasPermission(#id, 'House', 'delete')")} dans le controller.
+     */
     @Transactional
-    public void deleteHouse(UUID requesterId, Long houseId) {
-        Room room = findPrivateAndCheckOwner(requesterId, houseId);
+    public void deleteHouse(Long houseId) {
+        Room room = roomRepository.findById(houseId)
+                .orElseThrow(() -> new EntityNotFoundException("Maison introuvable : " + houseId));
         roomRepository.delete(room);
     }
 
     /**
-     * Valide l'accès d'un utilisateur à une maison privée.
-     * Retourne silencieusement si OK, lève une exception sinon.
+     * Valide l'accès d'un utilisateur à une maison privée avant de rejoindre la salle.
+     * Les modérateurs et admins passent toujours (canBypassRestrictions).
      */
-    public void validateAccess(UUID requesterId, Long houseId, String providedPassword) {
+    public void validateAccess(JwtPrincipal actor, Long houseId, String providedPassword) {
         Room room = roomRepository.findById(houseId)
                 .orElseThrow(() -> new EntityNotFoundException("Maison introuvable : " + houseId));
 
@@ -134,10 +179,8 @@ public class HouseService {
             return; // Les salles publiques sont toujours accessibles
         }
 
-        // Le propriétaire peut toujours entrer
-        boolean isOwner = room.getOwner() != null &&
-                room.getOwner().getId().equals(requesterId);
-        if (isOwner) return;
+        // Propriétaire, modérateurs et admins entrent sans restriction
+        if (housePolicy.canBypassRestrictions(actor, room)) return;
 
         switch (room.getAccess()) {
             case OPEN -> { /* ok */ }
@@ -155,17 +198,6 @@ public class HouseService {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private Room findPrivateAndCheckOwner(UUID requesterId, Long houseId) {
-        Room room = roomRepository.findById(houseId)
-                .orElseThrow(() -> new EntityNotFoundException("Maison introuvable : " + houseId));
-        if (room.getType() != RoomType.PRIVATE) {
-            throw new IllegalArgumentException("Cette salle n'est pas une maison privée");
-        }
-        if (room.getOwner() == null || !room.getOwner().getId().equals(requesterId)) {
-            throw new IllegalArgumentException("Vous n'êtes pas le propriétaire de cette maison");
-        }
-        return room;
-    }
 
     private HouseDto toHouseDto(Room room) {
         return HouseDto.builder()
@@ -178,6 +210,7 @@ public class HouseService {
                 .schemaId(room.getSchema() != null ? room.getSchema().getId() : null)
                 .schemaName(room.getSchema() != null ? room.getSchema().getName() : null)
                 .maxUsers(room.getMaxUsers())
+                .userCount(room.getUserCount())
                 .build();
     }
 }

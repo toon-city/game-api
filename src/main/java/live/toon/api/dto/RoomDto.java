@@ -10,6 +10,7 @@ public class RoomDto {
     private String name;
     private String houseData;
     private int maxUsers;
+    private int userCount;
     // Public rooms only — type is always "PUBLIC" here
     private String type;
 }

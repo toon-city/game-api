@@ -7,7 +7,9 @@ import live.toon.api.entity.RoomType;
 import live.toon.api.repository.ChatMessageRepository;
 import live.toon.api.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,6 +25,20 @@ public class RoomService {
         return roomRepository.findAllByType(RoomType.PUBLIC).stream()
                 .map(this::toDto)
                 .toList();
+    }
+
+    /**
+     * Returns a page of public rooms, sorted by userCount DESC then name ASC.
+     * When {@code search} is blank, only rooms with users present are returned.
+     */
+    public Page<RoomDto> getPublicRoomsPaged(String search, int page, int size) {
+        // Les rooms publiques sont toujours affichées (peopleOnly = false).
+        // Le filtre "lieux peuplés uniquement" s'applique seulement aux logements privés.
+        String q = search == null ? "" : search.trim();
+        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
+        return roomRepository
+                .findByTypeFiltered(RoomType.PUBLIC, q, false, pageable)
+                .map(this::toDto);
     }
 
     public RoomDto getRoom(Long id) {
@@ -55,6 +71,7 @@ public class RoomService {
                 .name(room.getName())
                 .houseData(room.getHouseData())
                 .maxUsers(room.getMaxUsers())
+                .userCount(room.getUserCount())
                 .type(room.getType().name())
                 .build();
     }

@@ -3,6 +3,8 @@ package live.toon.api.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -59,4 +61,19 @@ public class User {
 
     @Column(name = "last_login_at")
     private OffsetDateTime lastLoginAt;
+
+    /** Whether the user is currently connected (updated by game-server-java). */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean online = false;
+
+    /** ID of the room the user is currently in, or null (updated by game-server-java). */
+    @Column(name = "current_room_id")
+    private Long currentRoomId;
+
+    /** Options d'apparence de l'avatar (vêtements portés, couleur de peau…) stockées en JSON. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "avatar_options", columnDefinition = "jsonb", nullable = false)
+    @Builder.Default
+    private String avatarOptionsJson = "{}";
 }

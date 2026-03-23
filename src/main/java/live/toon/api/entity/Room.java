@@ -29,6 +29,11 @@ public class Room {
     @Column(name = "max_users", nullable = false)
     private int maxUsers = 50;
 
+    /** Number of users currently present (updated by game-server). */
+    @Builder.Default
+    @Column(name = "user_count", nullable = false)
+    private int userCount = 0;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 8)

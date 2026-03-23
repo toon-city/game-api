@@ -90,6 +90,7 @@ public class AuthService {
                 .toonizLevel(user.getToonizLevel())
                 .kreds(user.getKreds())
                 .pez(user.getPez())
+                .avatarOptionsJson(user.getAvatarOptionsJson())
                 .build();
     }
 
