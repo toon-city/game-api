@@ -3,8 +3,6 @@ package live.toon.api.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -71,9 +69,23 @@ public class User {
     @Column(name = "current_room_id")
     private Long currentRoomId;
 
-    /** Options d'apparence de l'avatar (vêtements portés, couleur de peau…) stockées en JSON. */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "avatar_options", columnDefinition = "jsonb", nullable = false)
+    /** Couleur de peau de l'avatar (valeur hexadécimale, ex: 0xf7ceaf). */
+    @Column(name = "skin_color")
+    private Integer skinColor;
+
+    // ── Moderation ──────────────────────────────────────────────────────────────
+
+    @Column(nullable = false)
     @Builder.Default
-    private String avatarOptionsJson = "{}";
+    private boolean banned = false;
+
+    @Column(name = "ban_reason", length = 500)
+    private String banReason;
+
+    @Column(name = "banned_at")
+    private OffsetDateTime bannedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "banned_by_id")
+    private User bannedBy;
 }

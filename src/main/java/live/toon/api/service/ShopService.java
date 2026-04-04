@@ -6,6 +6,7 @@ import live.toon.api.dto.ShopItemDto;
 import live.toon.api.dto.UserItemDto;
 import live.toon.api.entity.*;
 import live.toon.api.repository.CollectionRepository;
+import live.toon.api.repository.PurchaseLogRepository;
 import live.toon.api.repository.ShopItemRepository;
 import live.toon.api.repository.UserItemRepository;
 import live.toon.api.repository.UserRepository;
@@ -30,6 +31,7 @@ public class ShopService {
     private final UserItemRepository userItemRepository;
     private final InventoryService inventoryService;
     private final CollectionRepository collectionRepository;
+    private final PurchaseLogRepository purchaseLogRepository;
 
     // ─── Listing ──────────────────────────────────────────────────────────────
 
@@ -86,17 +88,39 @@ public class ShopService {
 
         Item item = shopItem.getItem();
 
-        // Items non-possessables (coiffures) : on met à jour l'avatar directement
+        // Persist purchase log
+        int pezSpent   = (option == BuyOption.PEZ)   ? shopItem.getPezPrice()  : 0;
+        int kredsSpent = (option == BuyOption.KREDS)  ? shopItem.getKredPrice() : shopItem.getKredBonus();
+        purchaseLogRepository.save(PurchaseLog.builder()
+                .userId(actor.getUserId())
+                .shopItem(shopItem)
+                .item(item)
+                .buyOption(option.name())
+                .pezSpent(pezSpent)
+                .kredsSpent(kredsSpent)
+                .build());
+
+        // Items non-possessables (coiffures) : marquer directement comme équipé dans user_items
         if (!item.isPossessable()) {
-            applyNonPossessableItem(user, item);
-            userRepository.save(user);
-            // Retourner un DTO "virtuel" sans ligne user_items
-            return UserItemDto.builder()
-                    .id(null)
-                    .item(InventoryService.toItemDto(item))
-                    .equipped(true)
-                    .acquiredAt(null)
-                    .build();
+            // Déséquiper l'éventuel item du même sous-type déjà équipé
+            userItemRepository.findEquippedBySubType(user, item.getSubType())
+                    .forEach(e -> e.setEquipped(false));
+            userItemRepository.saveAll(
+                    userItemRepository.findEquippedBySubType(user, item.getSubType()));
+            // Créer ou réutiliser une ligne user_items pour cet item
+            UserItem existing = userItemRepository.findByUserAndItem(user, item).orElse(null);
+            UserItem userItem;
+            if (existing != null) {
+                existing.setEquipped(true);
+                userItem = userItemRepository.save(existing);
+            } else {
+                userItem = userItemRepository.save(UserItem.builder()
+                        .user(user)
+                        .item(item)
+                        .equipped(true)
+                        .build());
+            }
+            return toUserItemDto(userItem);
         }
 
         // Items possessables : créer la ligne user_items
@@ -138,32 +162,6 @@ public class ShopService {
                 user.setKreds(user.getKreds() - shopItem.getKredPrice());
             }
         }
-    }
-
-    /**
-     * Pour un item non-possessable (ex: coiffure), on met directement à jour
-     * la clé correspondante dans avatarOptions du joueur.
-     */
-    private void applyNonPossessableItem(User user, Item item) {
-        if (item.getSpriteKey() == null || item.getSpritePath() == null) return;
-
-        String current = user.getAvatarOptionsJson();
-        if (current == null || current.isBlank()) current = "{}";
-
-        // Injection simple de la clé dans le JSON (sans dépendance Jackson)
-        String key = item.getSpriteKey();
-        String value = item.getSpritePath();
-        String entry = "\"" + key + "\":\"" + value + "\"";
-
-        // Supprime l'ancienne valeur de la clé si elle existe
-        String updated = current.replaceFirst("\"" + key + "\":\\s*\"[^\"]*\"", entry);
-        if (!updated.contains("\"" + key + "\"")) {
-            // Clé absente → l'insérer
-            updated = current.equals("{}")
-                    ? "{" + entry + "}"
-                    : current.substring(0, current.length() - 1) + "," + entry + "}";
-        }
-        user.setAvatarOptionsJson(updated);
     }
 
     private ShopItemDto toDto(ShopItem si) {

@@ -14,6 +14,14 @@ public interface ShopItemRepository extends JpaRepository<ShopItem, Long> {
         SELECT si FROM ShopItem si
         JOIN FETCH si.item i
         WHERE si.shopId = :shopId
+        ORDER BY si.id ASC
+        """)
+    Page<ShopItem> findAllByShopIdOrderById(@Param("shopId") ShopId shopId, Pageable pageable);
+
+    @Query("""
+        SELECT si FROM ShopItem si
+        JOIN FETCH si.item i
+        WHERE si.shopId = :shopId
           AND si.available = true
           AND (si.stock IS NULL OR si.stock > 0)
           AND (si.collection IS NULL OR si.collection.enabled = true)

@@ -58,4 +58,9 @@ public class Room {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
+
+    /** Verroué par un admin — le propriétaire ne peut pas déverrouiller. */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean locked = false;
 }

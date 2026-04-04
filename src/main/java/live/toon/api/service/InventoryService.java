@@ -61,9 +61,6 @@ public class InventoryService {
         userItem.setEquipped(true);
         userItemRepository.save(userItem);
 
-        // Mettre à jour avatarOptions
-        updateAvatarOptions(user);
-
         return toDto(userItem);
     }
 
@@ -79,36 +76,11 @@ public class InventoryService {
 
         userItem.setEquipped(false);
         userItemRepository.save(userItem);
-        updateAvatarOptions(user);
 
         return toDto(userItem);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
-
-    /**
-     * Reconstruit le JSON avatarOptions à partir des items équipés,
-     * puis sauvegarde en base.
-     */
-    void updateAvatarOptions(User user) {
-        List<UserItem> equipped = userItemRepository.findAllEquipped(user);
-
-        StringBuilder sb = new StringBuilder("{");
-        boolean first = true;
-        for (UserItem ui : equipped) {
-            String key = ui.getItem().getSpriteKey();
-            String path = ui.getItem().getSpritePath();
-            if (key != null && path != null) {
-                if (!first) sb.append(",");
-                sb.append("\"").append(key).append("\":\"").append(path).append("\"");
-                first = false;
-            }
-        }
-        sb.append("}");
-
-        user.setAvatarOptionsJson(sb.toString());
-        userRepository.save(user);
-    }
 
     private User loadUser(JwtPrincipal actor) {
     return userRepository.findById(actor.getUserId())

@@ -14,6 +14,6 @@ public class AuthResponse {
     private int toonizLevel;
     private int kreds;
     private int pez;
-    /** Options d'apparence de l'avatar, sérialisées en JSON. */
-    private String avatarOptionsJson;
+    /** Couleur de peau de l'avatar (entier hex, ex : 0xf7ceaf). */
+    private Integer skinColor;
 }

@@ -6,12 +6,14 @@ import live.toon.api.dto.UserDto;
 import live.toon.api.dto.UserUpdateRequest;
 import live.toon.api.entity.Gender;
 import live.toon.api.repository.UserRepository;
+import live.toon.api.security.JwtPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -105,4 +107,19 @@ public class UserController {
             int size,
             long onlineCount
     ) {}
+
+    /** PUT /api/users/me/skin-color — persiste la couleur de peau de l'utilisateur connecté. */
+    @PutMapping("/me/skin-color")
+    @Transactional
+    public ResponseEntity<Void> updateSkinColor(
+            @RequestBody SkinColorRequest request,
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        var user = userRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new EntityNotFoundException("Utilisateur introuvable"));
+        user.setSkinColor(request.skinColor());
+        userRepository.save(user);
+        return ResponseEntity.noContent().build();
+    }
+
+    public record SkinColorRequest(Integer skinColor) {}
 }

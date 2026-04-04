@@ -62,6 +62,9 @@ public interface UserItemRepository extends JpaRepository<UserItem, Long> {
     /** Vérifie qu'un UserItem appartient bien à l'utilisateur donné. */
     Optional<UserItem> findByIdAndUser(Long id, User user);
 
+    /** Trouve une ligne user_items pour un utilisateur et un item donné (si elle existe). */
+    Optional<UserItem> findByUserAndItem(User user, Item item);
+
     /** Tous les items équipés d'un utilisateur (pour reconstruction de l'avatar). */
     @Query("""
         SELECT ui FROM UserItem ui

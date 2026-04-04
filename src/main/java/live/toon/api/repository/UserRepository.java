@@ -14,5 +14,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmail(String email);
     /** Recherche par pseudo — le tri est défini via le Pageable (Sort). */
     Page<User> findByUsernameContainingIgnoreCase(String username, Pageable pageable);
+    Page<User> findByBanned(boolean banned, Pageable pageable);
+    Page<User> findByUsernameContainingIgnoreCaseAndBanned(String username, boolean banned, Pageable pageable);
     long countByOnlineTrue();
+    long countByBannedTrue();
 }

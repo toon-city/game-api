@@ -106,7 +106,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+        // Toujours accepter le panel admin (4201) en plus des origines configurées
+        java.util.ArrayList<String> origins = new java.util.ArrayList<>(List.of(allowedOrigins.split(",")));
+        if (!origins.contains("http://localhost:4201")) {
+            origins.add("http://localhost:4201");
+        }
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

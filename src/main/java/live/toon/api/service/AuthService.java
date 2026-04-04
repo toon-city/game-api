@@ -2,8 +2,10 @@ package live.toon.api.service;
 
 import live.toon.api.dto.AuthRequest;
 import live.toon.api.dto.AuthResponse;
+import live.toon.api.entity.ConnectionLog;
 import live.toon.api.entity.Gender;
 import live.toon.api.entity.User;
+import live.toon.api.repository.ConnectionLogRepository;
 import live.toon.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,6 +22,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final ConnectionLogRepository connectionLogRepository;
 
     /**
      * Login — vérifie les identifiants et retourne un JWT.
@@ -42,6 +45,7 @@ public class AuthService {
 
         user.setLastLoginAt(OffsetDateTime.now());
         userRepository.save(user);
+        connectionLogRepository.save(ConnectionLog.builder().userId(user.getId()).build());
         return buildResponse(user);
     }
 
@@ -90,7 +94,7 @@ public class AuthService {
                 .toonizLevel(user.getToonizLevel())
                 .kreds(user.getKreds())
                 .pez(user.getPez())
-                .avatarOptionsJson(user.getAvatarOptionsJson())
+                .skinColor(user.getSkinColor())
                 .build();
     }
 

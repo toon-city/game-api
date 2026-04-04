@@ -9,4 +9,5 @@ import java.util.List;
 public interface CollectionRepository extends JpaRepository<ItemCollection, Long> {
 
     List<ItemCollection> findByShopIdAndEnabledTrueOrderBySortOrderAsc(ShopId shopId);
+    List<ItemCollection> findAllByShopIdOrderBySortOrderAsc(ShopId shopId);
 }

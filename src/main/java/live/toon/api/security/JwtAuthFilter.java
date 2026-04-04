@@ -54,6 +54,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 UUID userId = jwtService.extractUserId(token);
                 // Charge les données fraîches depuis la DB (rang, statut, username actuel)
                 userRepository.findById(userId).ifPresent(user -> {
+                    if (user.isBanned()) {
+                        throw new BannedException(
+                                user.getBanReason() != null ? user.getBanReason() : "Compte banni");
+                    }
                     UserRank  rank      = UserRank.fromRank(user.getRank());
                     var       principal = new JwtPrincipal(user.getId(), user.getUsername(), rank);
                     var       auth      = new UsernamePasswordAuthenticationToken(
@@ -61,6 +65,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 });
             }
+        } catch (BannedException be) {
+            response.setContentType("application/json;charset=UTF-8");
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.getWriter().write("{\"status\":403,\"error\":\"Compte banni\",\"reason\":\"" + be.getMessage() + "\"}");
+            return;
         } catch (Exception e) {
             // Token invalide ou erreur imprévue : la requête continue sans auth.
             SecurityContextHolder.clearContext();

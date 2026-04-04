@@ -34,9 +34,8 @@ public enum UserRank {
 
     /** Convertit le champ {@code rank} entier de l'entité User en enum. Défaut : ROLE_USER. */
     public static UserRank fromRank(int rank) {
-        for (UserRank r : values()) {
-            if (r.level == rank) return r;
-        }
+        if (rank >= ROLE_ADMIN.level)     return ROLE_ADMIN;
+        if (rank >= ROLE_MODERATOR.level) return ROLE_MODERATOR;
         return ROLE_USER;
     }
 }
