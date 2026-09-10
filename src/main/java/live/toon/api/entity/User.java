@@ -92,4 +92,13 @@ public class User {
     /** NULL = permanent ban. A past timestamp is auto-lifted on next login (see AuthService.login()). */
     @Column(name = "banned_until")
     private OffsetDateTime bannedUntil;
+
+    // ── Marriage ─────────────────────────────────────────────────────────────
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "married_to_id")
+    private User marriedTo;
+
+    @Column(name = "married_at")
+    private OffsetDateTime marriedAt;
 }

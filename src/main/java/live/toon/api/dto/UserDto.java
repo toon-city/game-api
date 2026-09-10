@@ -4,10 +4,12 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Data
 @Builder
 public class UserDto {
+    private UUID id;
     private String username;
     /** MALE, FEMALE, NON_BINARY — peut être null */
     private String gender;
@@ -19,4 +21,5 @@ public class UserDto {
     private boolean online;
     /** ID de la room dans laquelle se trouve le joueur, ou null. */
     private Long currentRoomId;
+    private boolean married;
 }
