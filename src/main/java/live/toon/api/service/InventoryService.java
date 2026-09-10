@@ -40,6 +40,24 @@ public class InventoryService {
         return result.map(this::toDto);
     }
 
+    /**
+     * Vêtements actuellement équipés, sous la forme spriteKey → spritePath —
+     * même format que game-server-java's RoomStateService.buildClothingMap(),
+     * pour que n'importe quel client puisse habiller un Avatar avec
+     * `changeClothing(spriteKey, spritePath)` sans repasser par une room.
+     */
+    @Transactional(readOnly = true)
+    public java.util.Map<String, String> getEquippedClothing(JwtPrincipal actor) {
+        User user = loadUser(actor);
+        return userItemRepository.findAllEquipped(user).stream()
+                .map(UserItem::getItem)
+                .filter(item -> item.getSpriteKey() != null && item.getSpritePath() != null)
+                .collect(java.util.stream.Collectors.toMap(
+                        live.toon.api.entity.Item::getSpriteKey,
+                        live.toon.api.entity.Item::getSpritePath,
+                        (a, b) -> a));
+    }
+
     // ─── Équipement ───────────────────────────────────────────────────────────
 
     @Transactional
