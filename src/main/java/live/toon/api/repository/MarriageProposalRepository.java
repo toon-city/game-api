@@ -19,6 +19,9 @@ public interface MarriageProposalRepository extends JpaRepository<MarriagePropos
     /** Is this ring already promised to someone (a PENDING proposal already references it)? */
     Optional<MarriageProposal> findByRingUserItemIdAndStatus(Long ringUserItemId, MarriageProposalStatus status);
 
+    /** Most recently accepted marriage site-wide — for the home page "just married" panel. */
+    Optional<MarriageProposal> findFirstByStatusOrderByResolvedAtDesc(MarriageProposalStatus status);
+
     /**
      * Every PENDING proposal touching either side of a pair — used to auto-decline
      * everything else the instant one proposal is accepted (sent or received,

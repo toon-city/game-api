@@ -1,9 +1,11 @@
 package live.toon.api.service;
 
 import live.toon.api.dto.ConvertPezRequest;
+import live.toon.api.dto.JustMarriedDto;
 import live.toon.api.dto.MairieStatusDto;
 import live.toon.api.dto.MarriageProposalDto;
 import live.toon.api.dto.ProposeMarriageRequest;
+import live.toon.api.dto.SpouseDto;
 import live.toon.api.entity.*;
 import live.toon.api.repository.MarriageProposalRepository;
 import live.toon.api.repository.UserItemRepository;
@@ -17,6 +19,7 @@ import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -199,6 +202,35 @@ public class MarriageService {
         user.setPez(user.getPez() - pezAmount);
         user.setKreds(user.getKreds() + pezAmount / PEZ_PER_KRED);
         userRepository.save(user);
+    }
+
+    /** Most recently accepted marriage site-wide — for the home page "just married" panel. */
+    @Transactional(readOnly = true)
+    public Optional<JustMarriedDto> lastMarried() {
+        return marriageProposalRepository.findFirstByStatusOrderByResolvedAtDesc(MarriageProposalStatus.ACCEPTED)
+                .map(p -> {
+                    User u1 = userRepository.findById(p.getFromUserId()).orElse(null);
+                    User u2 = userRepository.findById(p.getToUserId()).orElse(null);
+                    if (u1 == null || u2 == null) return null;
+                    return JustMarriedDto.builder()
+                            .spouse1(toSpouseDto(u1))
+                            .spouse2(toSpouseDto(u2))
+                            .marriedAt(p.getResolvedAt())
+                            .build();
+                });
+    }
+
+    private SpouseDto toSpouseDto(User user) {
+        Map<String, String> clothing = userItemRepository.findAllEquipped(user).stream()
+                .map(UserItem::getItem)
+                .filter(item -> item.getSpriteKey() != null && item.getSpritePath() != null)
+                .collect(Collectors.toMap(Item::getSpriteKey, Item::getSpritePath, (a, b) -> a));
+        return SpouseDto.builder()
+                .username(user.getUsername())
+                .gender(user.getGender() != null ? user.getGender().name() : null)
+                .skinColor(user.getSkinColor())
+                .clothing(clothing)
+                .build();
     }
 
     private MarriageProposalDto toDto(MarriageProposal p, UUID otherUserId, Map<UUID, String> usernames) {

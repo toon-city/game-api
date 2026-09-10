@@ -1,6 +1,7 @@
 package live.toon.api.controller;
 
 import live.toon.api.dto.ConvertPezRequest;
+import live.toon.api.dto.JustMarriedDto;
 import live.toon.api.dto.MairieStatusDto;
 import live.toon.api.dto.ProposeMarriageRequest;
 import live.toon.api.security.JwtPrincipal;
@@ -22,6 +23,14 @@ public class MairieController {
     @GetMapping("/status")
     public ResponseEntity<MairieStatusDto> status(@AuthenticationPrincipal JwtPrincipal actor) {
         return ResponseEntity.ok(marriageService.status(actor));
+    }
+
+    /** Panneau "just married" de l'accueil — le dernier mariage accepté, site entier. */
+    @GetMapping("/last-married")
+    public ResponseEntity<JustMarriedDto> lastMarried() {
+        return marriageService.lastMarried()
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @PostMapping("/propose")
