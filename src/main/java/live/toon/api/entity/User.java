@@ -88,4 +88,8 @@ public class User {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "banned_by_id")
     private User bannedBy;
+
+    /** NULL = permanent ban. A past timestamp is auto-lifted on next login (see AuthService.login()). */
+    @Column(name = "banned_until")
+    private OffsetDateTime bannedUntil;
 }

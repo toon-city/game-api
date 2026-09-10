@@ -1,5 +1,6 @@
 package live.toon.api.service;
 
+import live.toon.api.client.GameServerClient;
 import live.toon.api.dto.AdminUserDto;
 import live.toon.api.dto.BanRequest;
 import live.toon.api.entity.User;
@@ -23,6 +24,7 @@ public class AdminUserService {
     private static final int PAGE_SIZE = 30;
 
     private final UserRepository userRepository;
+    private final GameServerClient gameServerClient;
 
     @Transactional(readOnly = true)
     public Page<AdminUserDto> listUsers(String search, Boolean banned, int page) {
@@ -69,7 +71,14 @@ public class AdminUserService {
         target.setBanReason(req.reason());
         target.setBannedAt(OffsetDateTime.now());
         target.setBannedBy(banner);
-        return toDto(userRepository.save(target));
+        target.setBannedUntil(req.bannedUntil());
+        AdminUserDto dto = toDto(userRepository.save(target));
+
+        // Immediate kick if the target is currently connected — best-effort,
+        // never blocks the ban itself (see GameServerClient's own doc).
+        gameServerClient.kickUser(targetId, "Banni" + (req.reason() != null ? " : " + req.reason() : ""));
+
+        return dto;
     }
 
     @Transactional
@@ -80,6 +89,7 @@ public class AdminUserService {
         target.setBanReason(null);
         target.setBannedAt(null);
         target.setBannedBy(null);
+        target.setBannedUntil(null);
         return toDto(userRepository.save(target));
     }
 
@@ -106,6 +116,7 @@ public class AdminUserService {
                 .banned(u.isBanned())
                 .banReason(u.getBanReason())
                 .bannedAt(u.getBannedAt())
+                .bannedUntil(u.getBannedUntil())
                 .bannedById(u.getBannedBy() != null ? u.getBannedBy().getId() : null)
                 .bannedByUsername(u.getBannedBy() != null ? u.getBannedBy().getUsername() : null)
                 .createdAt(u.getCreatedAt())
