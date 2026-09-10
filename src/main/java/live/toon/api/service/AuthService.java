@@ -43,6 +43,26 @@ public class AuthService {
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         }
 
+        // ── Ban check ──────────────────────────────────────────────────────
+        // `banned` has existed on this entity for a while (set by AdminUserService),
+        // but nothing ever actually checked it here — a banned account could log
+        // in completely normally. A past bannedUntil auto-lifts the ban instead of
+        // requiring a moderator to unban manually.
+        if (user.isBanned()) {
+            OffsetDateTime until = user.getBannedUntil();
+            if (until != null && until.isBefore(OffsetDateTime.now())) {
+                user.setBanned(false);
+                user.setBanReason(null);
+                user.setBannedAt(null);
+                user.setBannedBy(null);
+                user.setBannedUntil(null);
+            } else {
+                String reason = user.getBanReason();
+                throw new IllegalArgumentException(
+                        "Compte banni" + (reason != null && !reason.isBlank() ? " : " + reason : "."));
+            }
+        }
+
         user.setLastLoginAt(OffsetDateTime.now());
         userRepository.save(user);
         connectionLogRepository.save(ConnectionLog.builder().userId(user.getId()).build());

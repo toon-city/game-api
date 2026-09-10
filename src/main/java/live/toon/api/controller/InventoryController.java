@@ -31,6 +31,18 @@ public class InventoryController {
     }
 
     /**
+     * Vêtements actuellement équipés (spriteKey → spritePath) — pour afficher
+     * l'avatar habillé de l'utilisateur connecté sans passer par une room
+     * (ex: le badge avatar de la carte d'identité).
+     */
+    @GetMapping("/api/inventory/equipped")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<java.util.Map<String, String>> getEquipped(
+            @AuthenticationPrincipal JwtPrincipal actor) {
+        return ResponseEntity.ok(inventoryService.getEquippedClothing(actor));
+    }
+
+    /**
      * Équipe un item de vêtement à l'avatar.
      * Déséquipe automatiquement l'éventuel item du même sous-type.
      */

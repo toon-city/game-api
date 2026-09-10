@@ -37,3 +37,10 @@ app:
 
 cors:
   allowed-origins: ${CORS_ORIGINS:http://localhost:4200}
+
+# game-server-java's internal-only endpoints (real-time kick on ban).
+# internal-secret must match game-server-java's own INTERNAL_SECRET env var —
+# same "configure identically on both services" pattern as JWT_SECRET above.
+game-server:
+  internal-url: ${GAME_SERVER_INTERNAL_URL:http://localhost:8081}
+  internal-secret: ${INTERNAL_SECRET:changeme-internal-secret-32-chars!!}

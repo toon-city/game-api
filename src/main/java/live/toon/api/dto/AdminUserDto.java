@@ -21,6 +21,7 @@ public class AdminUserDto {
     private boolean banned;
     private String  banReason;
     private OffsetDateTime bannedAt;
+    private OffsetDateTime bannedUntil;
     private UUID           bannedById;
     private String         bannedByUsername;
     private OffsetDateTime createdAt;

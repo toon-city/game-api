@@ -1,14 +1,34 @@
 package live.toon.api.repository;
 
+import jakarta.persistence.LockModeType;
 import live.toon.api.entity.ShopId;
 import live.toon.api.entity.ShopItem;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface ShopItemRepository extends JpaRepository<ShopItem, Long> {
+
+    /**
+     * Same lookup as the plain findById, but row-locked (SELECT ... FOR UPDATE)
+     * for the purchase path: without this, two concurrent buyers on the last
+     * unit of stock can both pass the `stock > 0` check in
+     * ShopService.buyItem() before either decrement lands — the DB's
+     * `CHECK (stock >= 0)` constraint stops actual corruption (the second
+     * commit fails, rolling back that buyer's pez/kreds debit too), but the
+     * failure surfaces as a raw SQL exception instead of the friendly
+     * "épuisé" error. Locking here serializes the two buyers instead, so the
+     * existing stock check in buyItem() sees accurate data and produces the
+     * normal error message.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT si FROM ShopItem si JOIN FETCH si.item WHERE si.id = :id")
+    Optional<ShopItem> findByIdForUpdate(@Param("id") Long id);
 
     @Query("""
         SELECT si FROM ShopItem si
@@ -18,13 +38,28 @@ public interface ShopItemRepository extends JpaRepository<ShopItem, Long> {
         """)
     Page<ShopItem> findAllByShopIdOrderById(@Param("shopId") ShopId shopId, Pageable pageable);
 
+    /**
+     * NOTE: the collection filter uses an explicit `LEFT JOIN si.collection c`
+     * on purpose. `si.collection.enabled` as a bare path expression in the
+     * WHERE clause (the previous version of this query) makes Hibernate emit
+     * an implicit INNER JOIN to item_collections to evaluate it — which
+     * silently drops every row with collection_id NULL from the result
+     * entirely, regardless of the `si.collection IS NULL OR ...` intent,
+     * because an INNER JOIN never matches a NULL foreign key. That made every
+     * shop item with no assigned collection invisible from this listing
+     * (verified: confirmed empty for an uncollectioned item, appeared as soon
+     * as one was assigned) — a real, previously-unnoticed bug. The explicit
+     * LEFT JOIN here makes `c` nullable in the query, restoring the intended
+     * "no collection OR its collection is enabled" behavior.
+     */
     @Query("""
         SELECT si FROM ShopItem si
         JOIN FETCH si.item i
+        LEFT JOIN si.collection c
         WHERE si.shopId = :shopId
           AND si.available = true
           AND (si.stock IS NULL OR si.stock > 0)
-          AND (si.collection IS NULL OR si.collection.enabled = true)
+          AND (c IS NULL OR c.enabled = true)
         """)
     Page<ShopItem> findByShopIdAndAvailableTrue(
             @Param("shopId") ShopId shopId,

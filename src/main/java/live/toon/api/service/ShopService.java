@@ -67,7 +67,9 @@ public class ShopService {
         User user = userRepository.findById(actor.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"));
 
-        ShopItem shopItem = shopItemRepository.findById(shopItemId)
+        // Locked read: serializes concurrent buyers of the same item so the
+        // stock check below is race-safe (see findByIdForUpdate's javadoc).
+        ShopItem shopItem = shopItemRepository.findByIdForUpdate(shopItemId)
                 .orElseThrow(() -> new IllegalArgumentException("Article introuvable en boutique"));
 
         if (!shopItem.isAvailable()) {
@@ -103,10 +105,9 @@ public class ShopService {
         // Items non-possessables (coiffures) : marquer directement comme équipé dans user_items
         if (!item.isPossessable()) {
             // Déséquiper l'éventuel item du même sous-type déjà équipé
-            userItemRepository.findEquippedBySubType(user, item.getSubType())
-                    .forEach(e -> e.setEquipped(false));
-            userItemRepository.saveAll(
-                    userItemRepository.findEquippedBySubType(user, item.getSubType()));
+            List<UserItem> currentlyEquipped = userItemRepository.findEquippedBySubType(user, item.getSubType());
+            currentlyEquipped.forEach(e -> e.setEquipped(false));
+            userItemRepository.saveAll(currentlyEquipped);
             // Créer ou réutiliser une ligne user_items pour cet item
             UserItem existing = userItemRepository.findByUserAndItem(user, item).orElse(null);
             UserItem userItem;
