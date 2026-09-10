@@ -38,13 +38,28 @@ public interface ShopItemRepository extends JpaRepository<ShopItem, Long> {
         """)
     Page<ShopItem> findAllByShopIdOrderById(@Param("shopId") ShopId shopId, Pageable pageable);
 
+    /**
+     * NOTE: the collection filter uses an explicit `LEFT JOIN si.collection c`
+     * on purpose. `si.collection.enabled` as a bare path expression in the
+     * WHERE clause (the previous version of this query) makes Hibernate emit
+     * an implicit INNER JOIN to item_collections to evaluate it — which
+     * silently drops every row with collection_id NULL from the result
+     * entirely, regardless of the `si.collection IS NULL OR ...` intent,
+     * because an INNER JOIN never matches a NULL foreign key. That made every
+     * shop item with no assigned collection invisible from this listing
+     * (verified: confirmed empty for an uncollectioned item, appeared as soon
+     * as one was assigned) — a real, previously-unnoticed bug. The explicit
+     * LEFT JOIN here makes `c` nullable in the query, restoring the intended
+     * "no collection OR its collection is enabled" behavior.
+     */
     @Query("""
         SELECT si FROM ShopItem si
         JOIN FETCH si.item i
+        LEFT JOIN si.collection c
         WHERE si.shopId = :shopId
           AND si.available = true
           AND (si.stock IS NULL OR si.stock > 0)
-          AND (si.collection IS NULL OR si.collection.enabled = true)
+          AND (c IS NULL OR c.enabled = true)
         """)
     Page<ShopItem> findByShopIdAndAvailableTrue(
             @Param("shopId") ShopId shopId,
