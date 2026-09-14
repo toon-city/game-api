@@ -12,6 +12,8 @@ public enum ItemSubType {
     TOP,
     BOTTOM,
     MAKEUP,
+    // Mariage
+    RING,
     // Divers
     OTHER
 }

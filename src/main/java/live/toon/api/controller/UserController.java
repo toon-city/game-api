@@ -31,6 +31,7 @@ public class UserController {
      * Accessible publiquement (nécessaire pour le panneau joueurs sans auth).
      */
     @GetMapping
+    @Transactional
     public UserPageResponse listUsers(
             @RequestParam(defaultValue = "") String q,
             @RequestParam(defaultValue = "0") int page,
@@ -45,6 +46,7 @@ public class UserController {
         Page<UserDto> pageResult = userRepository
                 .findByUsernameContainingIgnoreCase(q, PageRequest.of(page, clampedSize, sort))
                 .map(u -> UserDto.builder()
+                        .id(u.getId())
                         .username(u.getUsername())
                         .gender(u.getGender() != null ? u.getGender().name() : null)
                         .rank(u.getRank())
@@ -52,6 +54,7 @@ public class UserController {
                         .lastLoginAt(u.getLastLoginAt())
                         .online(u.isOnline())
                         .currentRoomId(u.getCurrentRoomId())
+                        .married(u.getMarriedTo() != null)
                         .build());
 
         return new UserPageResponse(
@@ -89,6 +92,7 @@ public class UserController {
 
         var saved = userRepository.save(user);
         return ResponseEntity.ok(UserDto.builder()
+                .id(saved.getId())
                 .username(saved.getUsername())
                 .gender(saved.getGender() != null ? saved.getGender().name() : null)
                 .rank(saved.getRank())
@@ -96,6 +100,7 @@ public class UserController {
                 .lastLoginAt(saved.getLastLoginAt())
                 .online(saved.isOnline())
                 .currentRoomId(saved.getCurrentRoomId())
+                .married(saved.getMarriedTo() != null)
                 .build());
     }
 
