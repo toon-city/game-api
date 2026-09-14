@@ -27,8 +27,9 @@ public class MarriageProposal {
     @Column(name = "to_user_id", nullable = false)
     private UUID toUserId;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "ring_user_item_id", nullable = false)
+    /** Null once the proposal is DECLINED — the ring is consumed, not returned to the proposer. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ring_user_item_id")
     private UserItem ringUserItem;
 
     @Enumerated(EnumType.STRING)

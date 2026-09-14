@@ -19,6 +19,14 @@ public interface MarriageProposalRepository extends JpaRepository<MarriagePropos
     /** Is this ring already promised to someone (a PENDING proposal already references it)? */
     Optional<MarriageProposal> findByRingUserItemIdAndStatus(Long ringUserItemId, MarriageProposalStatus status);
 
+    /** Is there already a PENDING proposal between these two, in either direction? At most one active request per pair. */
+    @Query("""
+        SELECT p FROM MarriageProposal p
+        WHERE p.status = live.toon.api.entity.MarriageProposalStatus.PENDING
+          AND ((p.fromUserId = :a AND p.toUserId = :b) OR (p.fromUserId = :b AND p.toUserId = :a))
+        """)
+    Optional<MarriageProposal> findPendingBetween(@Param("a") UUID a, @Param("b") UUID b);
+
     /** Most recently accepted marriage site-wide — for the home page "just married" panel. */
     Optional<MarriageProposal> findFirstByStatusOrderByResolvedAtDesc(MarriageProposalStatus status);
 

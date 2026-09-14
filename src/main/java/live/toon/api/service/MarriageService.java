@@ -97,6 +97,9 @@ public class MarriageService {
                 .findByRingUserItemIdAndStatus(ring.getId(), MarriageProposalStatus.PENDING).isPresent()) {
             throw new IllegalArgumentException("Cette bague est déjà engagée dans une demande en attente");
         }
+        if (marriageProposalRepository.findPendingBetween(actor.getUserId(), req.toUserId()).isPresent()) {
+            throw new IllegalArgumentException("Une demande est déjà en attente avec ce toon");
+        }
 
         marriageProposalRepository.save(MarriageProposal.builder()
                 .fromUserId(actor.getUserId())
@@ -119,8 +122,7 @@ public class MarriageService {
         OffsetDateTime now = OffsetDateTime.now();
 
         if (!accept) {
-            proposal.setStatus(MarriageProposalStatus.DECLINED);
-            proposal.setResolvedAt(now);
+            declineAndLoseRing(proposal, now);
             marriageProposalRepository.save(proposal);
             return;
         }
@@ -167,10 +169,61 @@ public class MarriageService {
                 .findAllPendingInvolvingAny(List.of(fromId, toId));
         for (MarriageProposal p : others) {
             if (p.getId().equals(proposal.getId())) continue;
-            p.setStatus(MarriageProposalStatus.DECLINED);
-            p.setResolvedAt(now);
+            declineAndLoseRing(p, now);
         }
         marriageProposalRepository.saveAll(others);
+    }
+
+    /**
+     * Marks a proposal DECLINED and consumes its ring — a refusal (explicit,
+     * or automatic because the other party just married someone else) means
+     * the ring is lost, not returned to the proposer. The FK is
+     * ON DELETE SET NULL (see V19 migration) specifically so this can
+     * delete the ring without losing the proposal row itself.
+     */
+    private void declineAndLoseRing(MarriageProposal proposal, OffsetDateTime now) {
+        proposal.setStatus(MarriageProposalStatus.DECLINED);
+        proposal.setResolvedAt(now);
+        UserItem ring = proposal.getRingUserItem();
+        if (ring != null) {
+            proposal.setRingUserItem(null);
+            userItemRepository.delete(ring);
+        }
+    }
+
+    /**
+     * Ends the actor's current marriage unilaterally — either spouse can
+     * divorce, no confirmation from the other side needed (same "immediate,
+     * no back-and-forth" simplicity as the rest of this feature). Required
+     * before proposing again: propose() refuses an already-married actor.
+     */
+    @Transactional
+    public void divorce(JwtPrincipal actor) {
+        User actorUser = userRepository.findById(actor.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"));
+        User spouse = actorUser.getMarriedTo();
+        if (spouse == null) {
+            throw new IllegalArgumentException("Vous n'êtes pas marié");
+        }
+        UUID actorId = actor.getUserId();
+        UUID spouseId = spouse.getId();
+
+        // Same stable id-sorted lock order as respond()'s accept path — avoid
+        // deadlocking against a concurrent divorce/accept touching the same pair.
+        boolean actorFirst = actorId.compareTo(spouseId) <= 0;
+        User first  = userRepository.findByIdForUpdate(actorFirst ? actorId : spouseId)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"));
+        User second = userRepository.findByIdForUpdate(actorFirst ? spouseId : actorId)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"));
+        User a = actorFirst ? first : second;
+        User b = actorFirst ? second : first;
+
+        a.setMarriedTo(null);
+        a.setMarriedAt(null);
+        b.setMarriedTo(null);
+        b.setMarriedAt(null);
+        userRepository.save(a);
+        userRepository.save(b);
     }
 
     @Transactional
@@ -234,11 +287,17 @@ public class MarriageService {
     }
 
     private MarriageProposalDto toDto(MarriageProposal p, UUID otherUserId, Map<UUID, String> usernames) {
+        // status() only ever returns PENDING proposals, whose ring is never
+        // null (only a DECLINED proposal loses its ring) — the null check is
+        // defensive, not expected to trigger here.
+        UserItem ring = p.getRingUserItem();
         return MarriageProposalDto.builder()
                 .id(p.getId())
                 .otherUserId(otherUserId)
                 .otherUsername(usernames.get(otherUserId))
                 .createdAt(p.getCreatedAt())
+                .ringName(ring != null ? ring.getItem().getName() : null)
+                .ringDisplayImage(ring != null ? ring.getItem().getDisplayImage() : null)
                 .build();
     }
 }

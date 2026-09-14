@@ -13,4 +13,6 @@ public class MarriageProposalDto {
     private UUID otherUserId;
     private String otherUsername;
     private OffsetDateTime createdAt;
+    private String ringName;
+    private String ringDisplayImage;
 }

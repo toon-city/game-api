@@ -65,6 +65,12 @@ public class MairieController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/divorce")
+    public ResponseEntity<Void> divorce(@AuthenticationPrincipal JwtPrincipal actor) {
+        marriageService.divorce(actor);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/convert")
     public ResponseEntity<Void> convert(
             @AuthenticationPrincipal JwtPrincipal actor,
