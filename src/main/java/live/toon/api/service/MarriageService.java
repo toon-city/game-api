@@ -60,8 +60,11 @@ public class MarriageService {
         Map<UUID, String> usernames = userRepository.findAllById(otherIds).stream()
                 .collect(Collectors.toMap(User::getId, User::getUsername));
 
+        User spouse = user.getMarriedTo();
         return MairieStatusDto.builder()
-                .marriedToUsername(user.getMarriedTo() != null ? user.getMarriedTo().getUsername() : null)
+                .marriedToUsername(spouse != null ? spouse.getUsername() : null)
+                .marriedAt(user.getMarriedAt())
+                .spouse(spouse != null ? toSpouseDto(spouse) : null)
                 .sentProposals(sent.stream().map(p -> toDto(p, p.getToUserId(), usernames)).toList())
                 .receivedProposals(received.stream().map(p -> toDto(p, p.getFromUserId(), usernames)).toList())
                 .build();
