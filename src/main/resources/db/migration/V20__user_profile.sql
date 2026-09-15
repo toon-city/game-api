@@ -1,0 +1,2 @@
+ALTER TABLE users ADD COLUMN description TEXT;
+ALTER TABLE users ADD COLUMN job VARCHAR(64);

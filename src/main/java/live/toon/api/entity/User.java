@@ -73,6 +73,16 @@ public class User {
     @Column(name = "skin_color")
     private Integer skinColor;
 
+    // ── Profile ─────────────────────────────────────────────────────────────────
+
+    /** Bio libre affichée sur la page profil. Éditable par le titulaire (ou un admin). */
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    /** Titre libre affiché sur le profil (ex: "Pêcheur", "DJ") — pas un système de progression, juste un champ texte. */
+    @Column(length = 64)
+    private String job;
+
     // ── Moderation ──────────────────────────────────────────────────────────────
 
     @Column(nullable = false)

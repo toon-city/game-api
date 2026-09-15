@@ -2,9 +2,13 @@ package live.toon.api.controller;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import live.toon.api.dto.EquippedItemDto;
 import live.toon.api.dto.UserDto;
+import live.toon.api.dto.UserProfileDto;
 import live.toon.api.dto.UserUpdateRequest;
 import live.toon.api.entity.Gender;
+import live.toon.api.entity.User;
+import live.toon.api.repository.UserItemRepository;
 import live.toon.api.repository.UserRepository;
 import live.toon.api.security.JwtPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +29,7 @@ import java.util.UUID;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final UserItemRepository userItemRepository;
 
     /**
      * Liste les utilisateurs de manière paginée avec recherche par pseudo.
@@ -89,6 +94,14 @@ public class UserController {
                 user.setGender(Gender.valueOf(request.getGender().toUpperCase()));
             } catch (IllegalArgumentException ignored) { /* genre inconnu ignoré */ }
         }
+        // description/job: applied even blank (unlike email/gender above) —
+        // clearing a bio or title is a legitimate edit, not a no-op.
+        if (request.getDescription() != null) {
+            user.setDescription(request.getDescription());
+        }
+        if (request.getJob() != null) {
+            user.setJob(request.getJob());
+        }
 
         var saved = userRepository.save(user);
         return ResponseEntity.ok(UserDto.builder()
@@ -101,6 +114,55 @@ public class UserController {
                 .online(saved.isOnline())
                 .currentRoomId(saved.getCurrentRoomId())
                 .married(saved.getMarriedTo() != null)
+                .build());
+    }
+
+    /**
+     * Page profil complète : avatar + slots équipés (bague comprise, même
+     * sans sprite) + infos de base + description/job. Lecture publique
+     * (comme listUsers) — n'importe qui peut consulter le profil d'un autre
+     * joueur ; seule l'édition (PUT /{id}) est restreinte au titulaire/admin.
+     */
+    @GetMapping("/{id}/profile")
+    @Transactional
+    public ResponseEntity<UserProfileDto> getProfile(@PathVariable UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Utilisateur introuvable"));
+
+        var equippedItems = userItemRepository.findAllEquipped(user);
+
+        List<EquippedItemDto> equipped = equippedItems.stream()
+                .map(ui -> EquippedItemDto.builder()
+                        .userItemId(ui.getId())
+                        .subType(ui.getItem().getSubType().name())
+                        .name(ui.getItem().getName())
+                        .displayImage(ui.getItem().getDisplayImage())
+                        .build())
+                .toList();
+
+        // spriteKey -> spritePath — same convention as MarriageService.toSpouseDto(),
+        // only the items that actually have sprite art (a ring never does).
+        var clothing = equippedItems.stream()
+                .map(live.toon.api.entity.UserItem::getItem)
+                .filter(item -> item.getSpriteKey() != null && item.getSpritePath() != null)
+                .collect(java.util.stream.Collectors.toMap(
+                        live.toon.api.entity.Item::getSpriteKey,
+                        live.toon.api.entity.Item::getSpritePath,
+                        (a, b) -> a));
+
+        User spouse = user.getMarriedTo();
+        return ResponseEntity.ok(UserProfileDto.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .gender(user.getGender() != null ? user.getGender().name() : null)
+                .createdAt(user.getCreatedAt())
+                .job(user.getJob())
+                .description(user.getDescription())
+                .skinColor(user.getSkinColor())
+                .clothing(clothing)
+                .marriedToUsername(spouse != null ? spouse.getUsername() : null)
+                .marriedAt(user.getMarriedAt())
+                .equippedItems(equipped)
                 .build());
     }
 
