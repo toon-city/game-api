@@ -24,8 +24,36 @@ public class AdminItemService {
 
     @Transactional(readOnly = true)
     public Page<ItemDto> listItems(int page) {
-        return itemRepository.findAll(PageRequest.of(page, PAGE_SIZE, Sort.by("id").descending()))
-                .map(this::toDto);
+        return listItems(page, null, null);
+    }
+
+    /**
+     * search/type were accepted by the controller and sent by the admin UI
+     * (catalogue search box, type filter, and the item-picker in the shop
+     * editor) but silently ignored here — Spring drops unknown query params,
+     * so every call just returned the same unfiltered id-desc page.
+     */
+    @Transactional(readOnly = true)
+    public Page<ItemDto> listItems(int page, String search, String type) {
+        String name = (search != null && !search.isBlank()) ? search.trim() : null;
+        ItemType itemType = (type != null && !type.isBlank()) ? ItemType.valueOf(type.toUpperCase()) : null;
+
+        // Alphabetical once the admin is actively searching/filtering (what
+        // you want scanning a match list); id-desc (newest first) for the
+        // plain unfiltered catalogue browse, same as before.
+        Sort sort = (name != null || itemType != null) ? Sort.by("name").ascending() : Sort.by("id").descending();
+        PageRequest pageable = PageRequest.of(page, PAGE_SIZE, sort);
+
+        if (name != null && itemType != null) {
+            return itemRepository.findByNameContainingIgnoreCaseAndItemType(name, itemType, pageable).map(this::toDto);
+        }
+        if (name != null) {
+            return itemRepository.findByNameContainingIgnoreCase(name, pageable).map(this::toDto);
+        }
+        if (itemType != null) {
+            return itemRepository.findByItemType(itemType, pageable).map(this::toDto);
+        }
+        return itemRepository.findAll(pageable).map(this::toDto);
     }
 
     @Transactional(readOnly = true)

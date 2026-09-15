@@ -19,8 +19,11 @@ public class AdminItemController {
     private final AdminItemService adminItemService;
 
     @GetMapping
-    public ResponseEntity<Page<ItemDto>> listItems(@RequestParam(defaultValue = "0") int page) {
-        return ResponseEntity.ok(adminItemService.listItems(page));
+    public ResponseEntity<Page<ItemDto>> listItems(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String type) {
+        return ResponseEntity.ok(adminItemService.listItems(page, search, type));
     }
 
     @GetMapping("/{id}")
