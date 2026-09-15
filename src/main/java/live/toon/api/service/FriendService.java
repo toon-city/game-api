@@ -9,9 +9,12 @@ import live.toon.api.entity.FriendRequestStatus;
 import live.toon.api.entity.Friendship;
 import live.toon.api.entity.User;
 import live.toon.api.entity.UserBlock;
+import live.toon.api.entity.UserItem;
+import live.toon.api.entity.Item;
 import live.toon.api.repository.FriendRequestRepository;
 import live.toon.api.repository.FriendshipRepository;
 import live.toon.api.repository.UserBlockRepository;
+import live.toon.api.repository.UserItemRepository;
 import live.toon.api.repository.UserRepository;
 import live.toon.api.security.JwtPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +45,7 @@ import java.util.stream.Collectors;
 public class FriendService {
 
     private final UserRepository userRepository;
+    private final UserItemRepository userItemRepository;
     private final FriendRequestRepository friendRequestRepository;
     private final FriendshipRepository friendshipRepository;
     private final UserBlockRepository userBlockRepository;
@@ -59,18 +64,39 @@ public class FriendService {
         sent.forEach(r -> otherIds.add(r.getToUserId()));
         received.forEach(r -> otherIds.add(r.getFromUserId()));
         blocks.forEach(b -> otherIds.add(b.getBlockedId()));
-        Map<UUID, String> usernames = userRepository.findAllById(otherIds).stream()
-                .collect(Collectors.toMap(User::getId, User::getUsername));
+        Map<UUID, User> users = userRepository.findAllById(otherIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+        // Equipped-items query per user, memoized across this one status()
+        // call — same "loop, one query per user" style as
+        // MarriageService.toSpouseDto, fine here since a friends list is
+        // naturally small (not a paginated directory like /api/users).
+        Map<UUID, Map<String, String>> clothingCache = new HashMap<>();
 
         return FriendsStatusDto.builder()
                 .friends(friendships.stream().map(f -> {
                     UUID otherId = f.getUserAId().equals(me) ? f.getUserBId() : f.getUserAId();
-                    return FriendDto.builder().userId(otherId).username(usernames.get(otherId)).since(f.getCreatedAt()).build();
+                    User u = users.get(otherId);
+                    return FriendDto.builder()
+                            .userId(otherId)
+                            .username(u != null ? u.getUsername() : null)
+                            .since(f.getCreatedAt())
+                            .skinColor(u != null ? u.getSkinColor() : null)
+                            .clothing(clothingFor(u, clothingCache))
+                            .build();
                 }).toList())
-                .sentRequests(sent.stream().map(r -> toRequestDto(r, r.getToUserId(), usernames)).toList())
-                .receivedRequests(received.stream().map(r -> toRequestDto(r, r.getFromUserId(), usernames)).toList())
+                .sentRequests(sent.stream().map(r -> toRequestDto(r, r.getToUserId(), users, clothingCache)).toList())
+                .receivedRequests(received.stream().map(r -> toRequestDto(r, r.getFromUserId(), users, clothingCache)).toList())
                 .blocked(blocks.stream()
-                        .map(b -> BlockedUserDto.builder().userId(b.getBlockedId()).username(usernames.get(b.getBlockedId())).since(b.getCreatedAt()).build())
+                        .map(b -> {
+                            User u = users.get(b.getBlockedId());
+                            return BlockedUserDto.builder()
+                                    .userId(b.getBlockedId())
+                                    .username(u != null ? u.getUsername() : null)
+                                    .since(b.getCreatedAt())
+                                    .skinColor(u != null ? u.getSkinColor() : null)
+                                    .clothing(clothingFor(u, clothingCache))
+                                    .build();
+                        })
                         .toList())
                 .build();
     }
@@ -188,13 +214,25 @@ public class FriendService {
         }
     }
 
-    private FriendRequestDto toRequestDto(FriendRequest r, UUID otherUserId, Map<UUID, String> usernames) {
+    private FriendRequestDto toRequestDto(FriendRequest r, UUID otherUserId, Map<UUID, User> users, Map<UUID, Map<String, String>> clothingCache) {
+        User u = users.get(otherUserId);
         return FriendRequestDto.builder()
                 .id(r.getId())
                 .otherUserId(otherUserId)
-                .otherUsername(usernames.get(otherUserId))
+                .otherUsername(u != null ? u.getUsername() : null)
                 .createdAt(r.getCreatedAt())
+                .skinColor(u != null ? u.getSkinColor() : null)
+                .clothing(clothingFor(u, clothingCache))
                 .build();
+    }
+
+    /** spriteKey (catégorie) -> spritePath for this user's currently equipped items — memoized per status() call. */
+    private Map<String, String> clothingFor(User user, Map<UUID, Map<String, String>> cache) {
+        if (user == null) return Map.of();
+        return cache.computeIfAbsent(user.getId(), id -> userItemRepository.findAllEquipped(user).stream()
+                .map(UserItem::getItem)
+                .filter(item -> item.getSpriteKey() != null && item.getSpritePath() != null)
+                .collect(Collectors.toMap(Item::getSpriteKey, Item::getSpritePath, (a, b) -> a)));
     }
 
     private static UUID min(UUID a, UUID b) { return a.toString().compareTo(b.toString()) <= 0 ? a : b; }
