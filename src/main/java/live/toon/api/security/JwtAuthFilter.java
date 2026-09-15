@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import live.toon.api.repository.UserRepository;
 import live.toon.api.service.JwtService;
+import live.toon.api.service.UserActivityService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -28,12 +29,14 @@ import java.util.UUID;
  */
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private final JwtService     jwtService;
-    private final UserRepository userRepository;
+    private final JwtService          jwtService;
+    private final UserRepository      userRepository;
+    private final UserActivityService userActivityService;
 
-    public JwtAuthFilter(JwtService jwtService, UserRepository userRepository) {
-        this.jwtService     = jwtService;
-        this.userRepository = userRepository;
+    public JwtAuthFilter(JwtService jwtService, UserRepository userRepository, UserActivityService userActivityService) {
+        this.jwtService          = jwtService;
+        this.userRepository      = userRepository;
+        this.userActivityService = userActivityService;
     }
 
     @Override
@@ -63,6 +66,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     var       auth      = new UsernamePasswordAuthenticationToken(
                             principal, null, principal.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(auth);
+                    userActivityService.touchDailyActivity(user.getId());
                 });
             }
         } catch (BannedException be) {

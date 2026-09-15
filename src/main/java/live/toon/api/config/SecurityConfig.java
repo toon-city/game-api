@@ -4,6 +4,7 @@ import live.toon.api.repository.UserRepository;
 import live.toon.api.security.JwtAuthFilter;
 import live.toon.api.security.ResourcePermissionEvaluator;
 import live.toon.api.service.JwtService;
+import live.toon.api.service.UserActivityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -35,15 +36,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtService     jwtService;
-    private final UserRepository userRepository;
+    private final JwtService          jwtService;
+    private final UserRepository      userRepository;
+    private final UserActivityService userActivityService;
 
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
 
     @Bean
     public JwtAuthFilter jwtAuthFilter() {
-        return new JwtAuthFilter(jwtService, userRepository);
+        return new JwtAuthFilter(jwtService, userRepository, userActivityService);
     }
 
     /**

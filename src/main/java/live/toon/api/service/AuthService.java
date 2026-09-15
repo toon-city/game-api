@@ -105,6 +105,7 @@ public class AuthService {
     }
 
     private AuthResponse buildResponse(User user) {
+        var metier = user.getMetier();
         return AuthResponse.builder()
                 .token(jwtService.generateToken(user))
                 .userId(user.getId().toString())
@@ -115,6 +116,8 @@ public class AuthService {
                 .kreds(user.getKreds())
                 .pez(user.getPez())
                 .skinColor(user.getSkinColor())
+                .metierName(metier != null ? metier.getName() : null)
+                .metierDailyPez(metier != null ? metier.getDailyPez() : 0)
                 .build();
     }
 

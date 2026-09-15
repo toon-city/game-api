@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -111,4 +112,31 @@ public class User {
 
     @Column(name = "married_at")
     private OffsetDateTime marriedAt;
+
+    // ── Métier ──────────────────────────────────────────────────────────────
+    // Distinct from `job` above (free-text profile tagline, never gated) —
+    // this is the real gameplay progression: catalogue entry with a daily
+    // pez payout and eligibility conditions, see MetierAssignmentService.
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "metier_id")
+    private Metier metier;
+
+    /** Horodatage du dernier changement — base du cooldown d'une semaine avant d'en rechoisir un. */
+    @Column(name = "metier_changed_at")
+    private OffsetDateTime metierChangedAt;
+
+    /**
+     * Jours joués : 1 à l'inscription, incrémenté par
+     * UserActivityService.touchDailyActivity() à la première requête
+     * authentifiée d'un jour calendaire encore jamais vu (voir
+     * {@link #lastPlayedDate}).
+     */
+    @Column(name = "days_played", nullable = false)
+    @Builder.Default
+    private int daysPlayed = 1;
+
+    /** Dernier jour calendaire déjà compté dans daysPlayed. */
+    @Column(name = "last_played_date")
+    private LocalDate lastPlayedDate;
 }
