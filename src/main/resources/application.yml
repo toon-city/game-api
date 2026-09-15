@@ -21,6 +21,16 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    # V6__house_json.sql dollar-quotes a JSON blob ($JSON$...$JSON$) that
+    # contains many `}` — Flyway's placeholder scanner (${...}) treats the
+    # `${` right after the opening $JSON$ tag as the start of a placeholder
+    # and grabs everything up to the first `}` it finds as the "name",
+    # failing with "No value provided for placeholder" on any truly fresh
+    # database (this had never actually run before in this environment —
+    # every prior local/dev postgres already had a persisted volume past
+    # V6). No migration here uses real Flyway placeholders, so just turn
+    # the feature off rather than escape/rewrite the JSON.
+    placeholder-replacement: false
 
   devtools:
     restart:
