@@ -2,6 +2,7 @@ package live.toon.api.service;
 
 import live.toon.api.dto.ItemDto;
 import live.toon.api.dto.UserItemDto;
+import live.toon.api.entity.ItemSubType;
 import live.toon.api.entity.ItemType;
 import live.toon.api.entity.User;
 import live.toon.api.entity.UserItem;
@@ -90,6 +91,15 @@ public class InventoryService {
 
         if (!userItem.isEquipped()) {
             throw new IllegalArgumentException("Cet item n'est pas équipé");
+        }
+
+        // TOP/BOTTOM sont toujours équipés — retirer sans remplacer laisserait
+        // l'avatar torse nu/sans bas. Switching (equipItem sur un autre TOP/
+        // BOTTOM) reste permis : ça déséquipe l'ancien automatiquement, ce
+        // n'est jamais un retrait pur.
+        ItemSubType subType = userItem.getItem().getSubType();
+        if (subType == ItemSubType.TOP || subType == ItemSubType.BOTTOM) {
+            throw new IllegalArgumentException("Ce vêtement ne peut pas être retiré — équipez-en un autre à la place.");
         }
 
         userItem.setEquipped(false);
