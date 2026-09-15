@@ -1,6 +1,7 @@
 package live.toon.api.controller;
 
 import live.toon.api.dto.AdminUserDto;
+import live.toon.api.dto.BalanceUpdateRequest;
 import live.toon.api.dto.BanRequest;
 import live.toon.api.dto.RankUpdateRequest;
 import live.toon.api.security.JwtPrincipal;
@@ -54,5 +55,13 @@ public class AdminUserController {
             @PathVariable UUID id,
             @RequestBody RankUpdateRequest req) {
         return ResponseEntity.ok(adminUserService.updateRank(id, req.rank()));
+    }
+
+    @PutMapping("/{id}/balance")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<AdminUserDto> updateBalance(
+            @PathVariable UUID id,
+            @RequestBody BalanceUpdateRequest req) {
+        return ResponseEntity.ok(adminUserService.updateBalance(id, req));
     }
 }

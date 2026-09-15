@@ -2,6 +2,7 @@ package live.toon.api.service;
 
 import live.toon.api.client.GameServerClient;
 import live.toon.api.dto.AdminUserDto;
+import live.toon.api.dto.BalanceUpdateRequest;
 import live.toon.api.dto.BanRequest;
 import live.toon.api.entity.User;
 import live.toon.api.repository.UserRepository;
@@ -99,6 +100,18 @@ public class AdminUserService {
         User target = userRepository.findById(targetId)
                 .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"));
         target.setRank(rank);
+        return toDto(userRepository.save(target));
+    }
+
+    /** Sets pez/kreds to the given absolute value — null leaves that currency untouched. */
+    @Transactional
+    public AdminUserDto updateBalance(UUID targetId, BalanceUpdateRequest req) {
+        if (req.pez() != null && req.pez() < 0) throw new IllegalArgumentException("Pez ne peut pas être négatif");
+        if (req.kreds() != null && req.kreds() < 0) throw new IllegalArgumentException("Kreds ne peut pas être négatif");
+        User target = userRepository.findById(targetId)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"));
+        if (req.pez() != null)   target.setPez(req.pez());
+        if (req.kreds() != null) target.setKreds(req.kreds());
         return toDto(userRepository.save(target));
     }
 
