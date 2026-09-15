@@ -55,6 +55,6 @@ public class ShopController {
             @PathVariable ShopId shopId,
             @PathVariable Long shopItemId,
             @RequestBody BuyOptionRequest request) {
-        return ResponseEntity.ok(shopService.buyItem(actor, shopItemId, request.option()));
+        return ResponseEntity.ok(shopService.buyItem(actor, shopItemId, request.option(), request.quantity()));
     }
 }
