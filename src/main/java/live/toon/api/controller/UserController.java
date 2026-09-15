@@ -155,6 +155,8 @@ public class UserController {
                 .id(user.getId())
                 .username(user.getUsername())
                 .gender(user.getGender() != null ? user.getGender().name() : null)
+                .rank(user.getRank())
+                .toonizLevel(user.getToonizLevel())
                 .createdAt(user.getCreatedAt())
                 .job(user.getJob())
                 .description(user.getDescription())

@@ -15,6 +15,10 @@ public class UserProfileDto {
     private UUID id;
     private String username;
     private String gender;
+    /** 0 = joueur, 1 = modérateur, 2 = admin. */
+    private int rank;
+    /** 0 = pas tooniz, 1-3 = niveau. */
+    private int toonizLevel;
     private OffsetDateTime createdAt;
     private String job;
     private String description;
