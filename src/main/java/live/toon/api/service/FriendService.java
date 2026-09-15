@@ -82,6 +82,8 @@ public class FriendService {
                             .since(f.getCreatedAt())
                             .skinColor(u != null ? u.getSkinColor() : null)
                             .clothing(clothingFor(u, clothingCache))
+                            .online(u != null && u.isOnline())
+                            .currentRoomId(u != null ? u.getCurrentRoomId() : null)
                             .build();
                 }).toList())
                 .sentRequests(sent.stream().map(r -> toRequestDto(r, r.getToUserId(), users, clothingCache)).toList())
