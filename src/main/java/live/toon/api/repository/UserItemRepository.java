@@ -16,7 +16,11 @@ import java.util.Optional;
 public interface UserItemRepository extends JpaRepository<UserItem, Long> {
 
     /**
-     * Items disponibles dans l'inventaire : non équipés ET non placés.
+     * Items disponibles dans l'inventaire : non équipés, non placés, et pas
+     * engagés dans une offre d'échange ouverte (voir TradeOffer — un item
+     * proposé à l'échange disparaît de l'inventaire tant que l'offre est
+     * ouverte, sans qu'aucun flag n'existe sur UserItem lui-même, même
+     * convention que la bague de mariage en attente).
      * On eager-fetch l'item associé pour éviter le N+1.
      */
     @Query("""
@@ -25,6 +29,10 @@ public interface UserItemRepository extends JpaRepository<UserItem, Long> {
         WHERE ui.user = :user
           AND ui.equipped = false
           AND ui.placedInRoom IS NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM TradeOffer t
+              WHERE t.offeredUserItem = ui AND t.status = live.toon.api.entity.TradeOfferStatus.OPEN
+          )
         """)
     Page<UserItem> findInventory(@Param("user") User user, Pageable pageable);
 
@@ -38,11 +46,35 @@ public interface UserItemRepository extends JpaRepository<UserItem, Long> {
           AND i.itemType = :itemType
           AND ui.equipped = false
           AND ui.placedInRoom IS NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM TradeOffer t
+              WHERE t.offeredUserItem = ui AND t.status = live.toon.api.entity.TradeOfferStatus.OPEN
+          )
         """)
     Page<UserItem> findInventoryByType(
             @Param("user") User user,
             @Param("itemType") live.toon.api.entity.ItemType itemType,
             Pageable pageable);
+
+    /**
+     * Exemplaires disponibles de `item` que `user` pourrait céder pour
+     * accepter une offre d'échange — non équipé, non placé, pas déjà
+     * engagé ailleurs. Le premier trouvé convient (un exemplaire d'un même
+     * Item en vaut un autre, pas de choix UI).
+     */
+    @Query("""
+        SELECT ui FROM UserItem ui
+        JOIN FETCH ui.item i
+        WHERE ui.user = :user
+          AND ui.item = :item
+          AND ui.equipped = false
+          AND ui.placedInRoom IS NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM TradeOffer t
+              WHERE t.offeredUserItem = ui AND t.status = live.toon.api.entity.TradeOfferStatus.OPEN
+          )
+        """)
+    List<UserItem> findAvailableForTrade(@Param("user") User user, @Param("item") Item item);
 
     /**
      * Trouve l'item actuellement équipé d'un sous-type donné.

@@ -4,8 +4,10 @@ import live.toon.api.dto.ItemDto;
 import live.toon.api.dto.UserItemDto;
 import live.toon.api.entity.ItemSubType;
 import live.toon.api.entity.ItemType;
+import live.toon.api.entity.TradeOfferStatus;
 import live.toon.api.entity.User;
 import live.toon.api.entity.UserItem;
+import live.toon.api.repository.TradeOfferRepository;
 import live.toon.api.repository.UserItemRepository;
 import live.toon.api.repository.UserRepository;
 import live.toon.api.security.JwtPrincipal;
@@ -27,6 +29,7 @@ public class InventoryService {
     private final UserRepository userRepository;
     private final UserItemRepository userItemRepository;
     private final WorkOutfitService workOutfitService;
+    private final TradeOfferRepository tradeOfferRepository;
 
     // ─── Listing ──────────────────────────────────────────────────────────────
 
@@ -71,6 +74,9 @@ public class InventoryService {
 
         if (!userItem.getItem().getItemType().equals(live.toon.api.entity.ItemType.CLOTHING)) {
             throw new IllegalArgumentException("Seuls les vêtements peuvent être équipés");
+        }
+        if (tradeOfferRepository.existsByOfferedUserItemIdAndStatus(userItem.getId(), TradeOfferStatus.OPEN)) {
+            throw new IllegalArgumentException("Cet objet est proposé à l'échange — annulez l'échange pour l'équiper");
         }
 
         // Déséquiper l'éventuel item du même sous-type déjà équipé
