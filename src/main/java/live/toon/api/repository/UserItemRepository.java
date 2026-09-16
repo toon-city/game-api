@@ -57,6 +57,29 @@ public interface UserItemRepository extends JpaRepository<UserItem, Long> {
             Pageable pageable);
 
     /**
+     * Items disponibles dans l'inventaire filtrés par sous-type — utilisé pour
+     * le picker papier peint/sol (ItemSubType.WALLPAPER / FLOOR), pour ne pas
+     * les noyer parmi tout le reste des meubles (même ItemType.FURNITURE que
+     * les pièces posables, voir FurnitureStateService.PLACEABLE_SUBTYPE).
+     */
+    @Query("""
+        SELECT ui FROM UserItem ui
+        JOIN FETCH ui.item i
+        WHERE ui.user = :user
+          AND i.subType = :subType
+          AND ui.equipped = false
+          AND ui.placedInRoom IS NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM TradeOffer t
+              WHERE t.offeredUserItem = ui AND t.status = live.toon.api.entity.TradeOfferStatus.OPEN
+          )
+        """)
+    Page<UserItem> findInventoryBySubType(
+            @Param("user") User user,
+            @Param("subType") ItemSubType subType,
+            Pageable pageable);
+
+    /**
      * Exemplaires disponibles de `item` que `user` pourrait céder pour
      * accepter une offre d'échange — non équipé, non placé, pas déjà
      * engagé ailleurs. Le premier trouvé convient (un exemplaire d'un même

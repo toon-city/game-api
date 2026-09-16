@@ -35,12 +35,22 @@ public class InventoryService {
 
     @Transactional(readOnly = true)
     public Page<UserItemDto> listItems(JwtPrincipal actor, ItemType itemType, int page) {
+        return listItems(actor, itemType, null, page);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserItemDto> listItems(JwtPrincipal actor, ItemType itemType, ItemSubType subType, int page) {
         User user = loadUser(actor);
         PageRequest pr = PageRequest.of(page, PAGE_SIZE, Sort.by("acquiredAt").descending());
 
-        Page<UserItem> result = (itemType == null)
-                ? userItemRepository.findInventory(user, pr)
-                : userItemRepository.findInventoryByType(user, itemType, pr);
+        // subType wins if both given — it's the more specific filter (see the
+        // wallpaper/floor picker, which only ever needs "my WALLPAPER items"
+        // regardless of itemType).
+        Page<UserItem> result = subType != null
+                ? userItemRepository.findInventoryBySubType(user, subType, pr)
+                : itemType == null
+                    ? userItemRepository.findInventory(user, pr)
+                    : userItemRepository.findInventoryByType(user, itemType, pr);
 
         return result.map(this::toDto);
     }

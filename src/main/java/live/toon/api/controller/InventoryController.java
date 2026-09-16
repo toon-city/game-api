@@ -1,6 +1,7 @@
 package live.toon.api.controller;
 
 import live.toon.api.dto.UserItemDto;
+import live.toon.api.entity.ItemSubType;
 import live.toon.api.entity.ItemType;
 import live.toon.api.security.JwtPrincipal;
 import live.toon.api.service.InventoryService;
@@ -26,8 +27,9 @@ public class InventoryController {
     public ResponseEntity<Page<UserItemDto>> listInventory(
             @AuthenticationPrincipal JwtPrincipal actor,
             @RequestParam(required = false) ItemType type,
+            @RequestParam(required = false) ItemSubType subType,
             @RequestParam(defaultValue = "0") int page) {
-        return ResponseEntity.ok(inventoryService.listItems(actor, type, page));
+        return ResponseEntity.ok(inventoryService.listItems(actor, type, subType, page));
     }
 
     /**
