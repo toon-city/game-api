@@ -26,6 +26,7 @@ public class InventoryService {
 
     private final UserRepository userRepository;
     private final UserItemRepository userItemRepository;
+    private final WorkOutfitService workOutfitService;
 
     // ─── Listing ──────────────────────────────────────────────────────────────
 
@@ -50,13 +51,14 @@ public class InventoryService {
     @Transactional(readOnly = true)
     public java.util.Map<String, String> getEquippedClothing(JwtPrincipal actor) {
         User user = loadUser(actor);
-        return userItemRepository.findAllEquipped(user).stream()
+        var equipped = userItemRepository.findAllEquipped(user).stream()
                 .map(UserItem::getItem)
                 .filter(item -> item.getSpriteKey() != null && item.getSpritePath() != null)
                 .collect(java.util.stream.Collectors.toMap(
                         live.toon.api.entity.Item::getSpriteKey,
                         live.toon.api.entity.Item::getSpritePath,
                         (a, b) -> a));
+        return workOutfitService.applyOverlay(user, equipped);
     }
 
     // ─── Équipement ───────────────────────────────────────────────────────────

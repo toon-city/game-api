@@ -43,6 +43,24 @@ public class Metier {
     @Column(name = "min_days_played")
     private Integer minDaysPlayed;
 
+    // ── Tenue de travail ───────────────────────────────────────────────────
+    // Overlay appliqué par WorkOutfitService quand User.workOutfitActive est
+    // vrai — tshirt/pant obligatoires côté formulaire admin (une tenue sans
+    // les deux n'a pas de sens), hat optionnel. Nullable ici quand même :
+    // les métiers créés avant cette colonne n'en ont pas encore.
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outfit_tshirt_item_id")
+    private Item outfitTshirt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outfit_pant_item_id")
+    private Item outfitPant;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outfit_hat_item_id")
+    private Item outfitHat;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;

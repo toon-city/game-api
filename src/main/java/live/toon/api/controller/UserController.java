@@ -11,6 +11,7 @@ import live.toon.api.entity.User;
 import live.toon.api.repository.UserItemRepository;
 import live.toon.api.repository.UserRepository;
 import live.toon.api.security.JwtPrincipal;
+import live.toon.api.service.WorkOutfitService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +31,7 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final UserItemRepository userItemRepository;
+    private final WorkOutfitService workOutfitService;
 
     /**
      * Liste les utilisateurs de manière paginée avec recherche par pseudo.
@@ -102,6 +104,9 @@ public class UserController {
         if (request.getJob() != null) {
             user.setJob(request.getJob());
         }
+        if (request.getWorkOutfitActive() != null) {
+            user.setWorkOutfitActive(request.getWorkOutfitActive());
+        }
 
         var saved = userRepository.save(user);
         return ResponseEntity.ok(UserDto.builder()
@@ -149,6 +154,7 @@ public class UserController {
                         live.toon.api.entity.Item::getSpriteKey,
                         live.toon.api.entity.Item::getSpritePath,
                         (a, b) -> a));
+        clothing = workOutfitService.applyOverlay(user, clothing);
 
         User spouse = user.getMarriedTo();
         return ResponseEntity.ok(UserProfileDto.builder()
@@ -165,6 +171,8 @@ public class UserController {
                 .marriedToUsername(spouse != null ? spouse.getUsername() : null)
                 .marriedAt(user.getMarriedAt())
                 .equippedItems(equipped)
+                .workOutfitActive(user.isWorkOutfitActive())
+                .metierName(user.getMetier() != null ? user.getMetier().getName() : null)
                 .build());
     }
 

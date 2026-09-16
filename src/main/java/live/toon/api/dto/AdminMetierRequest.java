@@ -4,5 +4,8 @@ public record AdminMetierRequest(
     String name,
     int dailyPez,
     Integer minToonizLevel,
-    Integer minDaysPlayed
+    Integer minDaysPlayed,
+    Long outfitTshirtItemId,
+    Long outfitPantItemId,
+    Long outfitHatItemId
 ) {}

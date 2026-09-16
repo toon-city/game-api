@@ -9,5 +9,11 @@ public record MetierDto(
     String name,
     int dailyPez,
     Integer minToonizLevel,
-    Integer minDaysPlayed
+    Integer minDaysPlayed,
+    Long outfitTshirtItemId,
+    String outfitTshirtItemName,
+    Long outfitPantItemId,
+    String outfitPantItemName,
+    Long outfitHatItemId,
+    String outfitHatItemName
 ) {}

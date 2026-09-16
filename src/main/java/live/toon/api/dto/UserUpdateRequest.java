@@ -14,4 +14,6 @@ public class UserUpdateRequest {
     private String description;
     /** Free-text profile title (e.g. "Pêcheur"). Same blank-clears-it rule as description. */
     private String job;
+    /** Null = unchanged, unlike the string fields above (a boolean has no "unset" blank state to distinguish from false). */
+    private Boolean workOutfitActive;
 }

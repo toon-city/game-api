@@ -30,4 +30,8 @@ public class UserProfileDto {
     private OffsetDateTime marriedAt;
     /** Every equipped item, sprite or not (a ring has none) — the profile's "slots" around the avatar. */
     private List<EquippedItemDto> equippedItems;
+    /** When true, the frontend hides the slots grid entirely — clothing already reflects the work outfit overlay. */
+    private boolean workOutfitActive;
+    /** Null unless the user has a métier — lets the profile offer the toggle at all. */
+    private String metierName;
 }

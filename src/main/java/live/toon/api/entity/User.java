@@ -139,4 +139,13 @@ public class User {
     /** Dernier jour calendaire déjà compté dans daysPlayed. */
     @Column(name = "last_played_date")
     private LocalDate lastPlayedDate;
+
+    /**
+     * Overlay, pas un déséquipement : quand vrai, tshirt/pant/hat rendus
+     * sont ceux de la tenue du métier courant plutôt que les items
+     * réellement équipés (qui restent inchangés) — voir WorkOutfitService.
+     */
+    @Column(name = "work_outfit_active", nullable = false)
+    @Builder.Default
+    private boolean workOutfitActive = false;
 }
