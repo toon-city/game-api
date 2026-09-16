@@ -1,6 +1,7 @@
 package live.toon.api.controller;
 
 import live.toon.api.dto.ItemDto;
+import live.toon.api.entity.ItemSubType;
 import live.toon.api.entity.ItemType;
 import live.toon.api.repository.ItemRepository;
 import live.toon.api.service.InventoryService;
@@ -33,21 +34,10 @@ public class ItemController {
     @GetMapping
     public ResponseEntity<Page<ItemDto>> search(
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) ItemType itemType) {
+            @RequestParam(required = false) ItemType itemType,
+            @RequestParam(required = false) ItemSubType subType) {
         var pageable = PageRequest.of(0, PAGE_SIZE, Sort.by("name").ascending());
         String q = (search != null && !search.isBlank()) ? search.trim() : null;
-
-        Page<live.toon.api.entity.Item> page;
-        if (q != null && itemType != null) {
-            page = itemRepository.findByNameContainingIgnoreCaseAndItemType(q, itemType, pageable);
-        } else if (q != null) {
-            page = itemRepository.findByNameContainingIgnoreCase(q, pageable);
-        } else if (itemType != null) {
-            page = itemRepository.findByItemType(itemType, pageable);
-        } else {
-            page = itemRepository.findAll(pageable);
-        }
-
-        return ResponseEntity.ok(page.map(InventoryService::toItemDto));
+        return ResponseEntity.ok(itemRepository.search(q, itemType, subType, pageable).map(InventoryService::toItemDto));
     }
 }
