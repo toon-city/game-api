@@ -28,6 +28,13 @@ public class HouseSchema {
     @Column(name = "house_data", columnDefinition = "TEXT", nullable = false)
     private String houseData;
 
+    /** False for shapes reserved for a specific public room (Jardin, Disco,
+     *  Quizz, Maison hantée) — excluded from the picker a player sees when
+     *  creating their own private house. */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean selectable = true;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;

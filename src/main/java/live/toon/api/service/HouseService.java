@@ -34,7 +34,7 @@ public class HouseService {
     // ── Schémas ───────────────────────────────────────────────────────────────
 
     public List<HouseSchemaDto> listSchemas() {
-        return schemaRepository.findAll().stream()
+        return schemaRepository.findAllBySelectableTrue().stream()
                 .map(s -> HouseSchemaDto.builder()
                         .id(s.getId())
                         .name(s.getName())
