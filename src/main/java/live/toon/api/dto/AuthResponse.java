@@ -16,6 +16,7 @@ public class AuthResponse {
     private int pez;
     /** Couleur de peau de l'avatar (entier hex, ex : 0xf7ceaf). */
     private Integer skinColor;
+    private Integer hairColor;
     /** Nom du métier actuel, null si aucun — affiché dans le bloc identité. */
     private String metierName;
     /** Pezs/jour rapportés par le métier actuel, 0 si aucun. */

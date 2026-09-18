@@ -14,5 +14,6 @@ public class BlockedUserDto {
     private String username;
     private OffsetDateTime since;
     private Integer skinColor;
+    private Integer hairColor;
     private Map<String, String> clothing;
 }

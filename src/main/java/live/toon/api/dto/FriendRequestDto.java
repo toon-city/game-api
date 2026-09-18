@@ -15,5 +15,6 @@ public class FriendRequestDto {
     private String otherUsername;
     private OffsetDateTime createdAt;
     private Integer skinColor;
+    private Integer hairColor;
     private Map<String, String> clothing;
 }

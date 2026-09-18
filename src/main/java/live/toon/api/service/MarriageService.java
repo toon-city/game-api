@@ -285,6 +285,7 @@ public class MarriageService {
                 .username(user.getUsername())
                 .gender(user.getGender() != null ? user.getGender().name() : null)
                 .skinColor(user.getSkinColor())
+                .hairColor(user.getHairColor())
                 .clothing(clothing)
                 .build();
     }

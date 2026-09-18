@@ -116,6 +116,7 @@ public class AuthService {
                 .kreds(user.getKreds())
                 .pez(user.getPez())
                 .skinColor(user.getSkinColor())
+                .hairColor(user.getHairColor())
                 .metierName(metier != null ? metier.getName() : null)
                 .metierDailyPez(metier != null ? metier.getDailyPez() : 0)
                 .build();

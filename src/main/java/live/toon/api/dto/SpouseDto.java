@@ -12,6 +12,7 @@ public class SpouseDto {
     /** MALE, FEMALE, NON_BINARY — peut être null */
     private String gender;
     private Integer skinColor;
+    private Integer hairColor;
     /** spriteKey (catégorie) -> spritePath, même format que GET /api/inventory/equipped. */
     private Map<String, String> clothing;
 }

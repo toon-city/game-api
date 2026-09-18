@@ -81,6 +81,7 @@ public class FriendService {
                             .username(u != null ? u.getUsername() : null)
                             .since(f.getCreatedAt())
                             .skinColor(u != null ? u.getSkinColor() : null)
+                            .hairColor(u != null ? u.getHairColor() : null)
                             .clothing(clothingFor(u, clothingCache))
                             .online(u != null && u.isOnline())
                             .currentRoomId(u != null ? u.getCurrentRoomId() : null)
@@ -96,6 +97,7 @@ public class FriendService {
                                     .username(u != null ? u.getUsername() : null)
                                     .since(b.getCreatedAt())
                                     .skinColor(u != null ? u.getSkinColor() : null)
+                                    .hairColor(u != null ? u.getHairColor() : null)
                                     .clothing(clothingFor(u, clothingCache))
                                     .build();
                         })
@@ -224,6 +226,7 @@ public class FriendService {
                 .otherUsername(u != null ? u.getUsername() : null)
                 .createdAt(r.getCreatedAt())
                 .skinColor(u != null ? u.getSkinColor() : null)
+                .hairColor(u != null ? u.getHairColor() : null)
                 .clothing(clothingFor(u, clothingCache))
                 .build();
     }

@@ -23,6 +23,7 @@ public class UserProfileDto {
     private String job;
     private String description;
     private Integer skinColor;
+    private Integer hairColor;
     /** spriteKey -> spritePath, same shape as SpouseDto.clothing — for AvatarBadgeComponent's [override]. */
     private Map<String, String> clothing;
     /** null if not married. */

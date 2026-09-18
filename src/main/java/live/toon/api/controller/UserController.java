@@ -167,6 +167,7 @@ public class UserController {
                 .job(user.getJob())
                 .description(user.getDescription())
                 .skinColor(user.getSkinColor())
+                .hairColor(user.getHairColor())
                 .clothing(clothing)
                 .marriedToUsername(spouse != null ? spouse.getUsername() : null)
                 .marriedAt(user.getMarriedAt())
@@ -199,4 +200,19 @@ public class UserController {
     }
 
     public record SkinColorRequest(Integer skinColor) {}
+
+    /** PUT /api/users/me/hair-color — persiste la couleur de cheveux de l'utilisateur connecté. */
+    @PutMapping("/me/hair-color")
+    @Transactional
+    public ResponseEntity<Void> updateHairColor(
+            @RequestBody HairColorRequest request,
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        var user = userRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new EntityNotFoundException("Utilisateur introuvable"));
+        user.setHairColor(request.hairColor());
+        userRepository.save(user);
+        return ResponseEntity.noContent().build();
+    }
+
+    public record HairColorRequest(Integer hairColor) {}
 }

@@ -74,6 +74,10 @@ public class User {
     @Column(name = "skin_color")
     private Integer skinColor;
 
+    /** Couleur de cheveux de l'avatar (valeur hexadécimale) — teinte la coiffure équipée, même mécanisme que skinColor. */
+    @Column(name = "hair_color")
+    private Integer hairColor;
+
     // ── Profile ─────────────────────────────────────────────────────────────────
 
     /** Bio libre affichée sur la page profil. Éditable par le titulaire (ou un admin). */
