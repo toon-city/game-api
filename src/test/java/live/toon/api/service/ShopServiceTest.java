@@ -59,28 +59,38 @@ class ShopServiceTest {
     @Test
     void listItems_returnsAvailableItemsForShop() {
         ShopItem si = buildShopItem(SHOP_ITEM_ID, ShopId.COUPE_TIFF, buildClothingItem(10L, ItemSubType.HAIRSTYLE));
-        when(shopItemRepository.findByShopIdAndAvailableTrue(eq(ShopId.COUPE_TIFF), any(Pageable.class)))
+        when(shopItemRepository.findByShopIdAndAvailableTrue(
+                eq(ShopId.COUPE_TIFF), isNull(), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(si)));
 
-        Page<ShopItemDto> result = shopService.listItems(ShopId.COUPE_TIFF, null, 0);
+        Page<ShopItemDto> result = shopService.listItems(ShopId.COUPE_TIFF, null, null, 0);
 
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent().get(0).getId()).isEqualTo(SHOP_ITEM_ID);
-        verify(shopItemRepository, never())
-                .findByShopIdAndAvailableTrueAndCollectionId(any(), any(), any());
     }
 
     @Test
     void listItems_filtersByCollection() {
         ShopItem si = buildShopItem(SHOP_ITEM_ID, ShopId.COUPE_TIFF, buildClothingItem(10L, ItemSubType.HAIRSTYLE));
-        when(shopItemRepository.findByShopIdAndAvailableTrueAndCollectionId(
-                eq(ShopId.COUPE_TIFF), eq(1L), any(Pageable.class)))
+        when(shopItemRepository.findByShopIdAndAvailableTrue(
+                eq(ShopId.COUPE_TIFF), eq(1L), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(si)));
 
-        Page<ShopItemDto> result = shopService.listItems(ShopId.COUPE_TIFF, 1L, 0);
+        Page<ShopItemDto> result = shopService.listItems(ShopId.COUPE_TIFF, 1L, null, 0);
 
         assertThat(result.getTotalElements()).isEqualTo(1);
-        verify(shopItemRepository, never()).findByShopIdAndAvailableTrue(any(), any());
+    }
+
+    @Test
+    void listItems_filtersBySubType() {
+        ShopItem si = buildShopItem(SHOP_ITEM_ID, ShopId.VESTIS, buildClothingItem(11L, ItemSubType.TOP));
+        when(shopItemRepository.findByShopIdAndAvailableTrue(
+                eq(ShopId.VESTIS), isNull(), eq(ItemSubType.TOP), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(si)));
+
+        Page<ShopItemDto> result = shopService.listItems(ShopId.VESTIS, null, ItemSubType.TOP, 0);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
     }
 
     // ── buyItem : cas normaux ─────────────────────────────────────────────────

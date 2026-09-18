@@ -36,14 +36,9 @@ public class ShopService {
     // ─── Listing ──────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public Page<ShopItemDto> listItems(ShopId shopId, Long collectionId, int page) {
+    public Page<ShopItemDto> listItems(ShopId shopId, Long collectionId, ItemSubType subType, int page) {
         PageRequest pr = PageRequest.of(page, PAGE_SIZE, Sort.by("id").ascending());
-
-        Page<ShopItem> result = (collectionId == null)
-                ? shopItemRepository.findByShopIdAndAvailableTrue(shopId, pr)
-                : shopItemRepository.findByShopIdAndAvailableTrueAndCollectionId(shopId, collectionId, pr);
-
-        return result.map(this::toDto);
+        return shopItemRepository.findByShopIdAndAvailableTrue(shopId, collectionId, subType, pr).map(this::toDto);
     }
 
     @Transactional(readOnly = true)

@@ -7,6 +7,7 @@ import live.toon.api.dto.CollectionDto;
 import live.toon.api.dto.ItemDto;
 import live.toon.api.dto.ShopItemDto;
 import live.toon.api.dto.UserItemDto;
+import live.toon.api.entity.ItemSubType;
 import live.toon.api.entity.ItemType;
 import live.toon.api.entity.ShopId;
 import live.toon.api.config.SecurityConfig;
@@ -56,7 +57,7 @@ class ShopControllerTest {
 
     @Test
     void listItems_returns200_withoutAuthentication() throws Exception {
-        when(shopService.listItems(eq(ShopId.COUPE_TIFF), isNull(), eq(0)))
+        when(shopService.listItems(eq(ShopId.COUPE_TIFF), isNull(), isNull(), eq(0)))
                 .thenReturn(new PageImpl<>(List.of(buildShopItemDto(1L))));
 
         mockMvc.perform(get("/api/shops/COUPE_TIFF/items"))
@@ -66,25 +67,37 @@ class ShopControllerTest {
 
     @Test
     void listItems_withCollectionFilter_callsService() throws Exception {
-        when(shopService.listItems(eq(ShopId.COUPE_TIFF), eq(3L), eq(0)))
+        when(shopService.listItems(eq(ShopId.COUPE_TIFF), eq(3L), isNull(), eq(0)))
                 .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/shops/COUPE_TIFF/items")
                         .param("collectionId", "3"))
                 .andExpect(status().isOk());
 
-        verify(shopService).listItems(ShopId.COUPE_TIFF, 3L, 0);
+        verify(shopService).listItems(ShopId.COUPE_TIFF, 3L, null, 0);
+    }
+
+    @Test
+    void listItems_withSubTypeFilter_callsService() throws Exception {
+        when(shopService.listItems(eq(ShopId.VESTIS), isNull(), eq(ItemSubType.TOP), eq(0)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/shops/VESTIS/items")
+                        .param("subType", "TOP"))
+                .andExpect(status().isOk());
+
+        verify(shopService).listItems(ShopId.VESTIS, null, ItemSubType.TOP, 0);
     }
 
     @Test
     void listItems_withPageParam_callsService() throws Exception {
-        when(shopService.listItems(eq(ShopId.IKEBO), isNull(), eq(2)))
+        when(shopService.listItems(eq(ShopId.IKEBO), isNull(), isNull(), eq(2)))
                 .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/shops/IKEBO/items").param("page", "2"))
                 .andExpect(status().isOk());
 
-        verify(shopService).listItems(ShopId.IKEBO, null, 2);
+        verify(shopService).listItems(ShopId.IKEBO, null, null, 2);
     }
 
     // ── GET /api/shops/{shopId}/collections — route PUBLIQUE ─────────────────

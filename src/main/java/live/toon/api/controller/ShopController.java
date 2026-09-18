@@ -4,6 +4,7 @@ import live.toon.api.dto.BuyOptionRequest;
 import live.toon.api.dto.CollectionDto;
 import live.toon.api.dto.ShopItemDto;
 import live.toon.api.dto.UserItemDto;
+import live.toon.api.entity.ItemSubType;
 import live.toon.api.entity.ShopId;
 import live.toon.api.security.JwtPrincipal;
 import live.toon.api.service.ShopService;
@@ -31,8 +32,9 @@ public class ShopController {
     public ResponseEntity<Page<ShopItemDto>> listItems(
             @PathVariable ShopId shopId,
             @RequestParam(required = false) Long collectionId,
+            @RequestParam(required = false) ItemSubType subType,
             @RequestParam(defaultValue = "0") int page) {
-        return ResponseEntity.ok(shopService.listItems(shopId, collectionId, page));
+        return ResponseEntity.ok(shopService.listItems(shopId, collectionId, subType, page));
     }
 
     /**

@@ -1,6 +1,7 @@
 package live.toon.api.repository;
 
 import jakarta.persistence.LockModeType;
+import live.toon.api.entity.ItemSubType;
 import live.toon.api.entity.ShopId;
 import live.toon.api.entity.ShopItem;
 import org.springframework.data.domain.Page;
@@ -52,6 +53,16 @@ public interface ShopItemRepository extends JpaRepository<ShopItem, Long> {
      * LEFT JOIN here makes `c` nullable in the query, restoring the intended
      * "no collection OR its collection is enabled" behavior.
      */
+    /**
+     * `collectionId` and `subType` are both optional (null = don't filter on
+     * that axis) -- collapses what used to be two near-identical queries
+     * (plain vs collection-filtered) into one, and adds the subType axis the
+     * same way rather than a THIRD near-duplicate. `(c IS NULL OR
+     * c.enabled = true)` still does the right thing when collectionId IS
+     * given: si.collection.id = :collectionId already forces c non-null, so
+     * the OR's left branch never fires and it reduces to requiring that
+     * collection enabled -- same as the old dedicated query.
+     */
     @Query("""
         SELECT si FROM ShopItem si
         JOIN FETCH si.item i
@@ -60,22 +71,12 @@ public interface ShopItemRepository extends JpaRepository<ShopItem, Long> {
           AND si.available = true
           AND (si.stock IS NULL OR si.stock > 0)
           AND (c IS NULL OR c.enabled = true)
+          AND (:collectionId IS NULL OR si.collection.id = :collectionId)
+          AND (:subType IS NULL OR i.subType = :subType)
         """)
     Page<ShopItem> findByShopIdAndAvailableTrue(
             @Param("shopId") ShopId shopId,
-            Pageable pageable);
-
-    @Query("""
-        SELECT si FROM ShopItem si
-        JOIN FETCH si.item i
-        WHERE si.shopId = :shopId
-          AND si.available = true
-          AND (si.stock IS NULL OR si.stock > 0)
-          AND si.collection.id = :collectionId
-          AND si.collection.enabled = true
-        """)
-    Page<ShopItem> findByShopIdAndAvailableTrueAndCollectionId(
-            @Param("shopId") ShopId shopId,
             @Param("collectionId") Long collectionId,
+            @Param("subType") ItemSubType subType,
             Pageable pageable);
 }
